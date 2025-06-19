@@ -1,0 +1,129 @@
+<script type="text/html" data-template-name="uns-get">
+    <div class="form-row">
+        <label for="node-input-name">Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-redisConfig">Redis Config</label>
+        <input id="node-input-redisConfig">
+    </div>
+    <div class="form-row" style="align-items: center; display: flex;">
+        <label for="node-input-key" style="margin-right:8px;">UNS Key</label>
+        <select id="node-input-key" style="flex: 1; margin-right:8px;">
+            <option value="">-- Select a UNS --</option>
+        </select>
+        <button type="button" id="btn-get-uns" style="margin-right:4px;">🔄</button>
+        <button type="button" id="btn-clear-uns" style="color:#c00;">🗑️</button>
+    </div>
+    <div class="form-row">
+        <label for="node-input-fetchMode">Fetch Mode</label>
+        <select id="node-input-fetchMode">
+            <option value="value">Value Only</option>
+            <option value="complete">Complete</option>
+        </select>
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('uns-get', {
+        category: 'function',
+        color: '#a6bbcf',
+        defaults: {
+            name: { value: "" },
+            redisConfig: { type: "uns-redis-config", required: true },
+            key: { value: "uns", required: false },
+            fetchMode: { value: "complete", required: true }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-download",
+        label: function () { return this.name || "UNS – Get"; },
+        oneditprepare: function () {
+            var node = this;
+
+            function loadUNSList(showMessage) {
+                var redisConfigId = $("#node-input-redisConfig").val();
+                var select = $('#node-input-key');
+
+                if (!redisConfigId) {
+                    select.empty().append($('<option></option>').val('').text('-- Select a Redis Config first --'));
+                    return;
+                }
+
+                select.empty().append($('<option></option>').val('').text('-- Loading... --'));
+
+                $.getJSON('/uns/list', { redisConfigId: redisConfigId }, function (data) {
+                    select.empty();
+                    select.append($('<option></option>').val('').text('-- Select a UNS --'));
+                    data.forEach(function (path) {
+                        select.append($('<option></option>').val(path).text(path));
+                    });
+                    if (node.key) {
+                        select.val(node.key);
+                    }
+                    if(showMessage) {
+                        RED.notify("UNS list loaded.", "success");
+                    }
+                }).fail(function () {
+                    if(showMessage) {
+                        RED.notify("Failed to load UNS list.", "error");
+                    }
+                });
+            }
+
+            function clearUNSList() {
+                var redisConfigId = $("#node-input-redisConfig").val();
+                if (!redisConfigId) {
+                    RED.notify("Please select a Redis Config first!", "error");
+                    return;
+                }
+
+                let myNotification = RED.notify("Are you sure you want to CLEAR all UNS data in this Redis?", {
+                    modal: true,
+                    fixed: true,
+                    type: 'warning',
+                    buttons: [
+                        {
+                            text: "cancel",
+                            click: function(e) {
+                                myNotification.close();
+                            }
+                        },
+                        {
+                            text: "okay",
+                            class:"primary",
+                            click: function(e) {
+                                $.get('/uns/clear', { redisConfigId: redisConfigId }, function () {
+                                    RED.notify("All UNS entries have been cleared.", "success");
+                                    loadUNSList();
+                                }).fail(function () {
+                                    RED.notify("Failed to clear UNS list!", "error");
+                                });
+                            }
+                        }
+                    ]
+                });
+
+                myNotification();
+            }
+
+            // Tombol get/refresh UNS
+            $("#btn-get-uns").on("click", function () {
+                loadUNSList(true);
+            });
+
+            // Tombol clear UNS
+            $("#btn-clear-uns").on("click", function () {
+                clearUNSList();
+            });
+
+            // Reload kalau Redis Config diganti
+            $("#node-input-redisConfig").on("change", function () {
+                loadUNSList(false);
+            });
+
+            // Initial load tanpa notifikasi
+            loadUNSList(false);
+        }
+    });
+</script>

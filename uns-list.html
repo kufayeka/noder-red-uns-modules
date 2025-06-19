@@ -1,0 +1,29 @@
+<script type="text/html" data-template-name="uns-list">
+  <div class="form-row">
+    <label for="node-input-name">Name</label>
+    <input type="text"  id="node-input-name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-redisConfig">Redis Config</label>
+    <input id="node-input-redisConfig">
+  </div>
+  <div class="form-row">
+    <label for="node-input-namespacePrefix">Namespace Prefix</label>
+    <input type="text"  id="node-input-namespacePrefix" placeholder="optional">
+  </div>
+</script>
+<script type="text/javascript">
+  RED.nodes.registerType('uns-list', {
+    category: 'function',
+    color: '#a6bbcf',
+    defaults: {
+      name: { value: "" },
+      redisConfig: { type: "uns-redis-config", required: true },
+      namespacePrefix: { value: "uns", required: false }
+    },
+    inputs:1,
+    outputs:1,
+    icon: "font-awesome/fa-list",
+    label: function() { return this.name||"UNS – List"; }
+  });
+</script>

@@ -1,0 +1,109 @@
+<script type="text/html" data-template-name="uns-spawn">
+    <div class="form-row">
+        <label for="node-input-name">Name</label>
+        <input type="text" id="node-input-name" placeholder="Node name">
+    </div>
+    <div class="divider"></div>
+
+    <div class="form-row">
+        <label for="node-input-redisConfig">Redis Config</label>
+        <input type="text" id="node-input-redisConfig">
+    </div>
+    <div class="form-row">
+        <label for="node-input-dataSource">Data Source</label>
+        <input type="text" id="node-input-dataSource">
+        <input type="hidden" id="node-input-dataSourceType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-ttl">Time To Live (seconds)</label>
+        <input type="number" id="node-input-ttl" min="0" placeholder="0 = no expire" value="0">
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="form-row">
+        <label for="node-input-root">Root Namespace</label>
+        <input type="text" id="node-input-root" placeholder="e.g. uns.v1">
+    </div>
+    <div class="form-row">
+        <label for="node-input-org">Organisation</label>
+        <input type="text" id="node-input-org" placeholder="e.g. yeka_gmbh">
+    </div>
+    <div class="form-row">
+        <label for="node-input-siteType">Site Type</label>
+        <input type="text" id="node-input-siteType" placeholder="e.g. factory">
+    </div>
+    <div class="form-row">
+        <label for="node-input-siteName">Site Name</label>
+        <input type="text" id="node-input-siteName" placeholder="e.g. plant_01">
+    </div>
+    <div class="form-row">
+        <label for="node-input-subsiteType">Sub-site Type</label>
+        <input type="text" id="node-input-subsiteType" placeholder="e.g. floor">
+    </div>
+    <div class="form-row">
+        <label for="node-input-subsiteName">Sub-site Name</label>
+        <input type="text" id="node-input-subsiteName" placeholder="e.g. 1">
+    </div>
+    <div class="form-row">
+        <label for="node-input-deviceGroup">Device Group</label>
+        <input type="text" id="node-input-deviceGroup" placeholder="e.g. G1">
+    </div>
+    <div class="form-row">
+        <label for="node-input-deviceName">Device Name</label>
+        <input type="text" id="node-input-deviceName" placeholder="e.g. SC01">
+    </div>
+    <div class="form-row">
+        <label for="node-input-parameterName">Parameter Name</label>
+        <input type="text" id="node-input-parameterName" placeholder="e.g. value, status, alarm_code">
+    </div>
+    <div class="form-row">
+        <label for="node-input-description">UNS Description</label>
+        <input type="text" id="node-input-description" placeholder="...">
+    </div>
+
+    <style>
+        .divider {
+            border-top: 1px solid #ccc;
+            margin: 12px 0;
+        }
+    </style>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('uns-spawn',{
+        category: 'function',
+        color: '#a6bbcf',
+        defaults: {
+            name:           {value:""},
+            ttl:            {value:0, required:true},
+            redisConfig:    {type:"uns-redis-config", required:true},
+            dataSource:     {value:"payload", required:true},
+            dataSourceType: {value:"msg"},
+            root:           {value:"uns.v1", required:true},
+            org:            {value:"", required:true},
+            siteType:       {value:"", required:true},
+            siteName:       {value:"", required:true},
+            subsiteType:    {value:"", required:false},
+            subsiteName:    {value:"", required:false},
+            deviceGroup:    {value:"", required:false},
+            deviceName:     {value:"", required:false},
+            parameterName:  {value:"", required:true},
+            description: {value:"", required:false}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "font-awesome/fa-cloud-upload",
+        label: function() {
+            return this.name||"UNS – Spawn";
+        },
+        oneditprepare: function () {
+            // topic
+            $('#node-input-dataSource').typedInput({
+                default: "msg",
+                typeField: $('#node-input-dataSourceType'),
+                types: ["msg", "flow", "global"]
+            })
+        }
+    });
+</script>

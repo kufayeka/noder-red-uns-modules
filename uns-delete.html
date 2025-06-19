@@ -1,0 +1,29 @@
+<script type="text/html" data-template-name="uns-delete">
+  <div class="form-row">
+    <label for="node-input-name">Name</label>
+    <input type="text"  id="node-input-name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-redisConfig">Redis Config</label>
+    <input id="node-input-redisConfig">
+  </div>
+  <div class="form-row">
+    <label for="node-input-key">Key</label>
+    <input type="text"  id="node-input-key" placeholder="key or msg.key">
+  </div>
+</script>
+<script type="text/javascript">
+  RED.nodes.registerType('uns-delete', {
+    category: 'function',
+    color: '#a6bbcf',
+    defaults: {
+      name: { value: "" },
+      redisConfig: { type: "uns-redis-config", required: true },
+      key: { value: "", required: false }
+    },
+    inputs:1,
+    outputs:1,
+    icon: "font-awesome/fa-trash",
+    label: function() { return this.name||"UNS – Delete"; }
+  });
+</script>

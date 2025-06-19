@@ -1,0 +1,35 @@
+<script type="text/html" data-template-name="uns-redis-config">
+    <div class="form-row">
+        <label for="node-config-input-name">Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Optional name">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-host">Redis Host</label>
+        <input type="text" id="node-config-input-host" style="width:70%;" placeholder="127.0.0.1">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-port">Redis Port</label>
+        <input type="text" id="node-config-input-port" style="width:70%;" placeholder="6379">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-password">Redis Password</label>
+        <input type="password" id="node-config-input-password" style="width:70%;">
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('uns-redis-config',{
+        category: 'config',
+        defaults: {
+            name:     { value:"" },
+            host:     { value:"127.0.0.1", required:true },
+            port:     { value:"6379",      required:true }
+        },
+        credentials: {
+            password: { type:"password" }
+        },
+        label: function() {
+            return this.name || (this.host + ":" + this.port);
+        }
+    });
+</script>
