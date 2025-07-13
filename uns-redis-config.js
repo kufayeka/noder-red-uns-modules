@@ -17,20 +17,38 @@ module.exports = function(RED) {
             password: this.password
         };
 
+        // RED.httpAdmin.get("/uns/list", async (req, res) => {
+        //     try {
+        //         const redisConfigId = req.query.redisConfigId;
+        //         if (!redisConfigId) return res.status(400).json({error: "No redisConfigId"});
+        //         const redisConfig = RED.nodes.getNode(redisConfigId);
+        //         if (!redisConfig) return res.status(404).json({error: "Redis config not found"});
+        //         const client = redisConfig.getClient();
+        //         const keyList = await unsMgr.listKeys(client, "*");
+        //         res.json(keyList);
+        //     } catch (err) {
+        //         RED.log.error("UNS list error: " + err.message);
+        //         res.status(500).json({error: err.message});
+        //     }
+        // });
+
         RED.httpAdmin.get("/uns/list", async (req, res) => {
             try {
                 const redisConfigId = req.query.redisConfigId;
+                const unsPrefix = req.query.unsPrefix || "";
                 if (!redisConfigId) return res.status(400).json({error: "No redisConfigId"});
                 const redisConfig = RED.nodes.getNode(redisConfigId);
                 if (!redisConfig) return res.status(404).json({error: "Redis config not found"});
                 const client = redisConfig.getClient();
-                const keyList = await unsMgr.listKeys(client, "*");
-                res.json(keyList);
+                const allEntries = await unsMgr.listAllKeysWithValues(client, unsPrefix);
+                const filteredUNSList = allEntries.map(e => e.uns);
+                res.json(filteredUNSList);
             } catch (err) {
                 RED.log.error("UNS list error: " + err.message);
                 res.status(500).json({error: err.message});
             }
         });
+
 
 
         RED.httpAdmin.get("/uns/clear", async (req, res) => {

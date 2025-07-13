@@ -7,6 +7,11 @@
         <label for="node-input-redisConfig">Redis Config</label>
         <input id="node-input-redisConfig">
     </div>
+    <div class="form-row">
+        <label for="node-input-unsPrefix" style="margin-right:8px;">UNS Prefix</label>
+        <input type="text" id="node-input-unsPrefix" placeholder="e.g. uns.v1" style="width:160px;">
+    </div>
+
     <div class="form-row" style="align-items: center; display: flex;">
         <label for="node-input-key" style="margin-right:8px;">UNS Key</label>
         <select id="node-input-key" style="flex: 1; margin-right:8px;">
@@ -32,8 +37,10 @@
             name: { value: "" },
             redisConfig: { type: "uns-redis-config", required: true },
             key: { value: "uns", required: false },
-            fetchMode: { value: "complete", required: true }
+            fetchMode: { value: "complete", required: true },
+            unsPrefix: { value: "" }
         },
+
         inputs: 1,
         outputs: 1,
         icon: "font-awesome/fa-download",
@@ -44,6 +51,7 @@
             function loadUNSList(showMessage) {
                 var redisConfigId = $("#node-input-redisConfig").val();
                 var select = $('#node-input-key');
+                var unsPrefix = $("#node-input-unsPrefix").val();
 
                 if (!redisConfigId) {
                     select.empty().append($('<option></option>').val('').text('-- Select a Redis Config first --'));
@@ -52,7 +60,8 @@
 
                 select.empty().append($('<option></option>').val('').text('-- Loading... --'));
 
-                $.getJSON('/uns/list', { redisConfigId: redisConfigId }, function (data) {
+                // Tambahkan unsPrefix sebagai query param
+                $.getJSON('/uns/list', { redisConfigId: redisConfigId, unsPrefix: unsPrefix }, function (data) {
                     select.empty();
                     select.append($('<option></option>').val('').text('-- Select a UNS --'));
                     data.forEach(function (path) {
@@ -61,15 +70,20 @@
                     if (node.key) {
                         select.val(node.key);
                     }
-                    if(showMessage) {
+                    if (showMessage) {
                         RED.notify("UNS list loaded.", "success");
                     }
                 }).fail(function () {
-                    if(showMessage) {
+                    if (showMessage) {
                         RED.notify("Failed to load UNS list.", "error");
                     }
                 });
             }
+
+            $("#node-input-unsPrefix").on("change keyup", function () {
+                loadUNSList(false);
+            });
+
 
             function clearUNSList() {
                 var redisConfigId = $("#node-input-redisConfig").val();

@@ -1,109 +1,144 @@
 <script type="text/html" data-template-name="uns-spawn">
     <div class="form-row">
-        <label for="node-input-name">Name</label>
-        <input type="text" id="node-input-name" placeholder="Node name">
-    </div>
-    <div class="divider"></div>
-
-    <div class="form-row">
-        <label for="node-input-redisConfig">Redis Config</label>
-        <input type="text" id="node-input-redisConfig">
-    </div>
-    <div class="form-row">
-        <label for="node-input-dataSource">Data Source</label>
-        <input type="text" id="node-input-dataSource">
-        <input type="hidden" id="node-input-dataSourceType">
-    </div>
-    <div class="form-row">
-        <label for="node-input-ttl">Time To Live (seconds)</label>
-        <input type="number" id="node-input-ttl" min="0" placeholder="0 = no expire" value="0">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="UNS Spawn">
     </div>
 
-    <div class="divider"></div>
-
     <div class="form-row">
-        <label for="node-input-root">Root Namespace</label>
-        <input type="text" id="node-input-root" placeholder="e.g. uns.v1">
-    </div>
-    <div class="form-row">
-        <label for="node-input-org">Organisation</label>
-        <input type="text" id="node-input-org" placeholder="e.g. yeka_gmbh">
-    </div>
-    <div class="form-row">
-        <label for="node-input-siteType">Site Type</label>
-        <input type="text" id="node-input-siteType" placeholder="e.g. factory">
-    </div>
-    <div class="form-row">
-        <label for="node-input-siteName">Site Name</label>
-        <input type="text" id="node-input-siteName" placeholder="e.g. plant_01">
-    </div>
-    <div class="form-row">
-        <label for="node-input-subsiteType">Sub-site Type</label>
-        <input type="text" id="node-input-subsiteType" placeholder="e.g. floor">
-    </div>
-    <div class="form-row">
-        <label for="node-input-subsiteName">Sub-site Name</label>
-        <input type="text" id="node-input-subsiteName" placeholder="e.g. 1">
-    </div>
-    <div class="form-row">
-        <label for="node-input-deviceGroup">Device Group</label>
-        <input type="text" id="node-input-deviceGroup" placeholder="e.g. G1">
-    </div>
-    <div class="form-row">
-        <label for="node-input-deviceName">Device Name</label>
-        <input type="text" id="node-input-deviceName" placeholder="e.g. SC01">
-    </div>
-    <div class="form-row">
-        <label for="node-input-parameterName">Parameter Name</label>
-        <input type="text" id="node-input-parameterName" placeholder="e.g. value, status, alarm_code">
-    </div>
-    <div class="form-row">
-        <label for="node-input-description">UNS Description</label>
-        <input type="text" id="node-input-description" placeholder="...">
+        <label for="node-input-redisConfig"><i class="fa fa-database"></i> Redis Config</label>
+        <input type="text" id="node-input-redisConfig" placeholder="Select Redis Config">
     </div>
 
-    <style>
-        .divider {
-            border-top: 1px solid #ccc;
-            margin: 12px 0;
-        }
-    </style>
+    <hr>
+
+    <div class="form-row">
+        <label for="node-input-dataSourceType"><i class="fa fa-sign-in"></i> Data Source Type</label>
+        <select id="node-input-dataSourceType">
+            <option value="msg">msg</option>
+            <option value="flow">Flow Context</option>
+            <option value="global">Global Context</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-dataSource"><i class="fa fa-sign-in"></i> Data Source</label>
+        <input type="text" id="node-input-dataSource" placeholder="e.g. msg.payload.value">
+    </div>
+
+    <hr>
+
+    <div class="form-row">
+        <label for="node-input-root"><i class="fa fa-globe"></i> Root</label>
+        <input type="text" id="node-input-root" placeholder="e.g. uns.v1" value="uns.v1">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-org"><i class="fa fa-building"></i> Organization</label>
+        <input type="text" id="node-input-org" placeholder="e.g. Jasuindo">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-siteType"><i class="fa fa-map-marker"></i> Site Type</label>
+        <input type="text" id="node-input-siteType" placeholder="e.g. Factory">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-siteName"><i class="fa fa-map-marker"></i> Site Name</label>
+        <input type="text" id="node-input-siteName" placeholder="e.g. LingkarTimur">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-subsiteType"><i class="fa fa-map-marker"></i> Subsite Type</label>
+        <input type="text" id="node-input-subsiteType" placeholder="e.g. Building (optional)">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-subsiteName"><i class="fa fa-map-marker"></i> Subsite Name</label>
+        <input type="text" id="node-input-subsiteName" placeholder="e.g. Warehouse (optional)">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-deviceGroup"><i class="fa fa-cogs"></i> Device Group</label>
+        <input type="text" id="node-input-deviceGroup" placeholder="e.g. OffsetPrinter (optional)">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-deviceName"><i class="fa fa-cog"></i> Device Name</label>
+        <input type="text" id="node-input-deviceName" placeholder="e.g. Taiyo4 (optional)">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-parameterName"><i class="fa fa-info-circle"></i> Parameter Name</label>
+        <input type="text" id="node-input-parameterName" placeholder="e.g. Length">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-description"><i class="fa fa-file-text-o"></i> Description</label>
+        <input type="text" id="node-input-description" placeholder="e.g. Paper roll encoder length">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-ttl"><i class="fa fa-clock-o"></i> TTL (seconds)</label>
+        <input type="number" id="node-input-ttl" placeholder="e.g. 3600 (optional)">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-statusThrottleInterval"><i class="fa fa-tachometer"></i> Status Update Interval (ms)</label>
+        <input type="number" id="node-input-statusThrottleInterval" placeholder="e.g. 1000" value="1000">
+    </div>
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('uns-spawn',{
-        category: 'function',
-        color: '#a6bbcf',
+    RED.nodes.registerType('uns-spawn', {
+        category: 'database',
+        color: '#3FADB5',
         defaults: {
-            name:           {value:""},
-            ttl:            {value:0, required:true},
-            redisConfig:    {type:"uns-redis-config", required:true},
-            dataSource:     {value:"payload", required:true},
-            dataSourceType: {value:"msg"},
-            root:           {value:"uns.v1", required:true},
-            org:            {value:"", required:true},
-            siteType:       {value:"", required:true},
-            siteName:       {value:"", required:true},
-            subsiteType:    {value:"", required:false},
-            subsiteName:    {value:"", required:false},
-            deviceGroup:    {value:"", required:false},
-            deviceName:     {value:"", required:false},
-            parameterName:  {value:"", required:true},
-            description: {value:"", required:false}
+            name: { value: "" },
+            redisConfig: { type: "uns-redis-config", required: true },
+            dataSourceType: { value: "msg" },
+            dataSource: { value: "payload" },
+            root: { value: "uns.v1" },
+            org: { value: "" },
+            siteType: { value: "" },
+            siteName: { value: "" },
+            siteId: { value: "" },
+            subsiteType: { value: "" },
+            subsiteName: { value: "" },
+            deviceGroup: { value: "" },
+            deviceName: { value: "" },
+            deviceId: { value: "" },
+            parameterName: { value: "" },
+            description: { value: "" },
+            ttl: { value: "" },
+            statusThrottleInterval: { value: "1000" }
         },
-        inputs:1,
-        outputs:1,
-        icon: "font-awesome/fa-cloud-upload",
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-database",
         label: function() {
-            return this.name||"UNS – Spawn";
+            return this.name || "UNS Spawn";
         },
-        oneditprepare: function () {
-            // topic
-            $('#node-input-dataSource').typedInput({
-                default: "msg",
-                typeField: $('#node-input-dataSourceType'),
-                types: ["msg", "flow", "global"]
-            })
+
+        oneditprepare: function() {
+            $("#node-input-redisConfig").typedInput({
+                typeField: '#node-input-redisConfig-type',
+                types: ['uns-redis-config'],
+                default: 'uns-redis-config'
+            });
+
+            $("#node-input-dataSourceType").on("change", function() {
+                const type = $(this).val();
+                const placeholder = type === "msg" ? "e.g. msg.payload.value" :
+                    type === "flow" ? "e.g. flowVariable" :
+                        "e.g. globalVariable";
+                $("#node-input-dataSource").attr("placeholder", placeholder);
+            });
         }
     });
 </script>
+
+<style>
+    .form-row {
+        margin-bottom: 10px;
+    }
+</style>

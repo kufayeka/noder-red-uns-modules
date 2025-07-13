@@ -3,24 +3,28 @@ module.exports = function(RED) {
         RED.nodes.createNode(this, config);
         const node = this;
 
-        // Ambil Redis client dari config‐node
+        // Ambil Redis client dari config-node
         const redisCfg = RED.nodes.getNode(config.redisConfig);
         if (!redisCfg) {
             node.error("Missing Redis config");
+            node.status({fill: 'red', shape: 'ring', text: 'Missing Redis config'});
             return;
         }
         const client = redisCfg.getClient();
 
         // Tangani event Redis untuk status
-        client.on('ready', () => node.status({fill:'green',shape:'dot',text:'Redis connected'}));
-        client.on('error', err => node.status({fill:'red',shape:'ring',text:'Redis error'}));
-        client.on('reconnecting', (ms) => node.status({fill:'yellow',shape:'ring',text:`Redis reconnecting(${ms})`}));
+        client.on('ready', () => node.status({fill: 'green', shape: 'dot', text: 'Redis connected'}));
+        client.on('error', err => node.status({fill: 'red', shape: 'ring', text: `Redis error: ${err.message}`}));
+        client.on('reconnecting', ms => node.status({fill: 'yellow', shape: 'ring', text: `Reconnecting (${ms}ms)`}));
         client.on('close', () => node.status({}));
 
+        // Throttle interval untuk status update (dalam ms)
+        const throttleInterval = parseInt(config.statusThrottleInterval) || 1000;
+        let lastStatusUpdate = 0;
 
         node.on('input', async function(msg, send, done) {
             try {
-                // 1. ambil data
+                // 1. Ambil data
                 let data;
                 switch(config.dataSourceType) {
                     case 'flow':
@@ -33,7 +37,7 @@ module.exports = function(RED) {
                         data = RED.util.getMessageProperty(msg, config.dataSource);
                 }
 
-                // 2. bangun UNS path
+                // 2. Bangun UNS path
                 const parts = [
                     config.root,
                     config.org,
@@ -57,7 +61,7 @@ module.exports = function(RED) {
 
                 const status = msg.status;
 
-                // 3. susun payload
+                // 3. Susun payload
                 const ts = Date.now();
                 const store = {
                     metadata: {
@@ -78,37 +82,43 @@ module.exports = function(RED) {
                 };
                 msg.payload = store;
 
-                // 4. simpan ke Redis (key = node.id)
+                // 4. Simpan ke Redis
                 const ttl = parseInt(config.ttl) || 0;
                 if (ttl > 0) {
-                    if (ttl > 0) {
-                        await client.set(uns, JSON.stringify(store), "EX", ttl);
-                    } else {
-                        await client.set(uns, JSON.stringify(store));
-                    }
+                    await client.set(uns, JSON.stringify(store), "EX", ttl);
+                } else {
+                    await client.set(uns, JSON.stringify(store));
                 }
 
                 msg.metadata = store;
                 msg.value = data;
 
-                // 5. update node.status dengan UNS dan value
-                node.status({
-                    fill: 'green',
-                    shape: 'dot',
-                    text: `value: ${data} | uns: ${uns}`
-                });
+                // 5. Update node.status dengan throttling
+                const now = Date.now();
+                if (now - lastStatusUpdate >= throttleInterval) {
+                    node.status({
+                        fill: 'green',
+                        shape: 'dot',
+                        text: `value: ${data} | uns: ${uns}`
+                    });
+                    lastStatusUpdate = now;
+                }
 
                 send(msg);
                 done();
             } catch (err) {
-                node.status({fill:'red',shape:'ring',text:'Error'});
+                node.status({fill: 'red', shape: 'ring', text: `Error: ${err.message}`});
+                lastStatusUpdate = Date.now(); // Update timestamp untuk status error
                 node.error(err.message, msg);
-                done();
+                done(err);
             }
         });
 
         node.on('close', function(done) {
             node.status({});
+            if (redisCfg) {
+                redisCfg.closeClient();
+            }
             done();
         });
     }
