@@ -19,7 +19,7 @@ module.exports = function(RED) {
         client.on('close', () => node.status({}));
 
         // Throttle interval untuk status update (dalam ms)
-        const throttleInterval = parseInt(config.statusThrottleInterval) || 1000;
+        const defaultThrottleInterval = parseInt(config.statusThrottleInterval) || 1000;
         let lastStatusUpdate = 0;
 
         node.on('input', async function(msg, send, done) {
@@ -37,55 +37,70 @@ module.exports = function(RED) {
                         data = RED.util.getMessageProperty(msg, config.dataSource);
                 }
 
-                // 2. Bangun UNS path
+                // 2. Ambil field dari msg langsung, fallback ke config
+                const root = msg.root || config.root;
+                const org = msg.org || config.org;
+                const siteType = msg.siteType || config.siteType;
+                const siteName = msg.siteName || config.siteName;
+                const subsiteType = msg.subsiteType || config.subsiteType;
+                const subsiteName = msg.subsiteName || config.subsiteName;
+                const deviceGroup = msg.deviceGroup || config.deviceGroup;
+                const deviceName = msg.deviceName || config.deviceName;
+                const parameterName = msg.parameterName || config.parameterName;
+                const siteId = msg.siteId || config.siteId;
+                const deviceId = msg.deviceId || config.deviceId;
+                const description = msg.description || config.description;
+                const ttl = parseInt(msg.ttl) || parseInt(config.ttl) || 0;
+                const statusThrottleInterval = parseInt(msg.statusThrottleInterval) || defaultThrottleInterval;
+
+                // 3. Bangun UNS path
                 const parts = [
-                    config.root,
-                    config.org,
-                    config.siteType,
-                    config.siteName
+                    root,
+                    org,
+                    siteType,
+                    siteName
                 ];
 
-                if (config.subsiteType && config.subsiteName) {
-                    parts.push(config.subsiteType, config.subsiteName);
+                if (subsiteType && subsiteName) {
+                    parts.push(subsiteType, subsiteName);
                 }
-                if (config.deviceGroup) {
-                    parts.push(config.deviceGroup);
+                if (deviceGroup) {
+                    parts.push(deviceGroup);
                 }
-                if (config.deviceName) {
-                    parts.push(config.deviceName);
+                if (deviceName) {
+                    parts.push(deviceName);
                 }
-                parts.push(config.parameterName);
+                parts.push(parameterName);
 
                 const uns = parts.join('/');
                 msg.topic = uns;
 
-                const status = msg.status;
+                const status = msg.status || 'up';
 
-                // 3. Susun payload
+                // 4. Susun payload
                 const ts = Date.now();
                 const store = {
                     metadata: {
-                        root:         config.root,
-                        org:          config.org,
-                        siteType:     config.siteType,
-                        siteId:       config.siteId,
-                        subsiteType:  config.subsiteType,
-                        deviceGroup:  config.deviceGroup,
-                        deviceId:     config.deviceId,
-                        parameterName: config.parameterName,
-                        description:  config.description,
-                        last_update:  ts,
-                        uns: uns,
-                        status: status || "up"
+                        root,
+                        org,
+                        siteType,
+                        siteId,
+                        subsiteType,
+                        deviceGroup,
+                        deviceId,
+                        parameterName,
+                        description,
+                        last_update: ts,
+                        uns,
+                        status
                     },
                     value: data
                 };
                 msg.payload = store;
 
-                // 4. Simpan ke Redis
-                const ttl = parseInt(config.ttl) || 0;
+                // 5. Simpan ke Redis
                 if (ttl > 0) {
-                    await client.set(uns, JSON.stringify(store), "EX", ttl);
+                    await client.set(uns, JSON.stringify(store), 'EX', ttl);
                 } else {
                     await client.set(uns, JSON.stringify(store));
                 }
@@ -93,9 +108,9 @@ module.exports = function(RED) {
                 msg.metadata = store;
                 msg.value = data;
 
-                // 5. Update node.status dengan throttling
+                // 6. Update node.status dengan throttling
                 const now = Date.now();
-                if (now - lastStatusUpdate >= throttleInterval) {
+                if (now - lastStatusUpdate >= statusThrottleInterval) {
                     node.status({
                         fill: 'green',
                         shape: 'dot',
@@ -108,7 +123,7 @@ module.exports = function(RED) {
                 done();
             } catch (err) {
                 node.status({fill: 'red', shape: 'ring', text: `Error: ${err.message}`});
-                lastStatusUpdate = Date.now(); // Update timestamp untuk status error
+                lastStatusUpdate = Date.now();
                 node.error(err.message, msg);
                 done(err);
             }
