@@ -6,23 +6,16 @@
 
     <div class="form-row">
         <label for="node-input-redisConfig"><i class="fa fa-database"></i> Redis Config</label>
-        <input type="text" id="node-input-redisConfig" placeholder="Select Redis Config">
+        <input id="node-input-redisConfig" placeholder="Select Redis Config">
     </div>
 
     <hr>
 
-    <div class="form-row">
-        <label for="node-input-dataSourceType"><i class="fa fa-sign-in"></i> Data Source Type</label>
-        <select id="node-input-dataSourceType">
-            <option value="msg">msg</option>
-            <option value="flow">Flow Context</option>
-            <option value="global">Global Context</option>
-        </select>
-    </div>
-
+    <!-- Data source -->
     <div class="form-row">
         <label for="node-input-dataSource"><i class="fa fa-sign-in"></i> Data Source</label>
-        <input type="text" id="node-input-dataSource" placeholder="e.g. msg.payload.value">
+        <input type="text" id="node-input-dataSource" value="payload">
+        <input type="hidden" id="node-input-dataSourceType">
     </div>
 
     <hr>
@@ -31,17 +24,14 @@
         <label for="node-input-root"><i class="fa fa-globe"></i> Root</label>
         <input type="text" id="node-input-root" placeholder="e.g. uns.v1" value="uns.v1">
     </div>
-
     <div class="form-row">
         <label for="node-input-org"><i class="fa fa-building"></i> Organization</label>
         <input type="text" id="node-input-org" placeholder="e.g. Jasuindo">
     </div>
-
     <div class="form-row">
         <label for="node-input-siteType"><i class="fa fa-map-marker"></i> Site Type</label>
         <input type="text" id="node-input-siteType" placeholder="e.g. Factory">
     </div>
-
     <div class="form-row">
         <label for="node-input-siteName"><i class="fa fa-map-marker"></i> Site Name</label>
         <input type="text" id="node-input-siteName" placeholder="e.g. LingkarTimur">
@@ -51,7 +41,6 @@
         <label for="node-input-subsiteType"><i class="fa fa-map-marker"></i> Subsite Type</label>
         <input type="text" id="node-input-subsiteType" placeholder="e.g. Building (optional)">
     </div>
-
     <div class="form-row">
         <label for="node-input-subsiteName"><i class="fa fa-map-marker"></i> Subsite Name</label>
         <input type="text" id="node-input-subsiteName" placeholder="e.g. Warehouse (optional)">
@@ -61,7 +50,6 @@
         <label for="node-input-deviceGroup"><i class="fa fa-cogs"></i> Device Group</label>
         <input type="text" id="node-input-deviceGroup" placeholder="e.g. OffsetPrinter (optional)">
     </div>
-
     <div class="form-row">
         <label for="node-input-deviceName"><i class="fa fa-cog"></i> Device Name</label>
         <input type="text" id="node-input-deviceName" placeholder="e.g. Taiyo4 (optional)">
@@ -71,7 +59,6 @@
         <label for="node-input-parameterName"><i class="fa fa-info-circle"></i> Parameter Name</label>
         <input type="text" id="node-input-parameterName" placeholder="e.g. Length">
     </div>
-
     <div class="form-row">
         <label for="node-input-description"><i class="fa fa-file-text-o"></i> Description</label>
         <input type="text" id="node-input-description" placeholder="e.g. Paper roll encoder length">
@@ -81,10 +68,26 @@
         <label for="node-input-ttl"><i class="fa fa-clock-o"></i> TTL (seconds)</label>
         <input type="number" id="node-input-ttl" placeholder="e.g. 3600 (optional)">
     </div>
-
     <div class="form-row">
         <label for="node-input-statusThrottleInterval"><i class="fa fa-tachometer"></i> Status Update Interval (ms)</label>
         <input type="number" id="node-input-statusThrottleInterval" placeholder="e.g. 1000" value="1000">
+    </div>
+
+    <hr>
+
+    <!-- Historian options -->
+    <div class="form-row">
+        <label for="node-input-enableHistorian"><i class="fa fa-line-chart"></i> Enable Historian</label>
+        <input type="checkbox" id="node-input-enableHistorian">
+    </div>
+    <div class="form-row">
+        <label for="node-input-historianTimestamp"><i class="fa fa-clock-o"></i> Historian Timestamp Source</label>
+        <input type="text" id="node-input-historianTimestamp" value="timestamp">
+        <input type="hidden" id="node-input-historianTimestampType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-historianRetention"><i class="fa fa-hourglass-half"></i> Historian Retention (ms)</label>
+        <input type="number" id="node-input-historianRetention" placeholder="e.g. 86400000" value="86400000">
     </div>
 </script>
 
@@ -110,7 +113,11 @@
             parameterName: { value: "" },
             description: { value: "" },
             ttl: { value: "" },
-            statusThrottleInterval: { value: "1000" }
+            statusThrottleInterval: { value: "1000" },
+            enableHistorian: { value: false },
+            historianTimestampType: { value: "msg" },
+            historianTimestamp: { value: "ts" },
+            historianRetention: { value: 86400000 }
         },
         inputs: 1,
         outputs: 1,
@@ -126,12 +133,18 @@
                 default: 'uns-redis-config'
             });
 
-            $("#node-input-dataSourceType").on("change", function() {
-                const type = $(this).val();
-                const placeholder = type === "msg" ? "e.g. msg.payload.value" :
-                    type === "flow" ? "e.g. flowVariable" :
-                        "e.g. globalVariable";
-                $("#node-input-dataSource").attr("placeholder", placeholder);
+            // typedInput buat dataSourceType (msg/flow/global)
+            $('#node-input-dataSource').typedInput({
+                default: 'msg',
+                typeField: $('#node-input-dataSourceType'),
+                types: ['msg','flow','global']
+            });
+
+            // timestamp field juga bisa pakai typedInput
+            $('#node-input-historianTimestamp').typedInput({
+                default: 'msg',
+                typeField: $('#node-input-historianTimestampType'),
+                types: ['msg','flow','global']
             });
         }
     });

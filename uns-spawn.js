@@ -7,26 +7,45 @@ module.exports = function(RED) {
         const redisCfg = RED.nodes.getNode(config.redisConfig);
         if (!redisCfg) {
             node.error("Missing Redis config");
-            node.status({fill: 'red', shape: 'ring', text: 'Missing Redis config'});
+            node.status({ fill: 'red', shape: 'ring', text: 'Missing Redis config' });
             return;
         }
         const client = redisCfg.getClient();
 
-        // Tangani event Redis untuk status
-        client.on('ready', () => node.status({fill: 'green', shape: 'dot', text: 'Redis connected'}));
-        client.on('error', err => node.status({fill: 'red', shape: 'ring', text: `Redis error: ${err.message}`}));
-        client.on('reconnecting', ms => node.status({fill: 'yellow', shape: 'ring', text: `Reconnecting (${ms}ms)`}));
+        // Tangani event Redis
+        client.on('ready', () => node.status({ fill: 'green', shape: 'dot', text: 'Redis connected' }));
+        client.on('error', err => node.status({ fill: 'red', shape: 'ring', text: `Redis error: ${err.message}` }));
+        client.on('reconnecting', ms => node.status({ fill: 'yellow', shape: 'ring', text: `Reconnecting (${ms}ms)` }));
         client.on('close', () => node.status({}));
 
-        // Throttle interval untuk status update (dalam ms)
         const defaultThrottleInterval = parseInt(config.statusThrottleInterval) || 1000;
         let lastStatusUpdate = 0;
 
+        // Track TS key buat delete nanti
+        let tsKey = null;
+
+        async function createTSIfNotExist(uns) {
+            tsKey = `hist:${uns}`;
+            try {
+                await client.ts.create(tsKey, {
+                    RETENTION: parseInt(config.historianRetention) || 86400000,
+                    LABELS: { type: 'historian', uns }
+                });
+                node.warn(`TimeSeries created: ${tsKey}`);
+            } catch (err) {
+                if (err.message.includes('TSDB: key already exists')) {
+                    node.warn(`TimeSeries already exists: ${tsKey}`);
+                } else {
+                    node.error(`TS create error: ${err.message}`);
+                }
+            }
+        }
+
         node.on('input', async function(msg, send, done) {
             try {
-                // 1. Ambil data
+                // Ambil data dari msg/flow/global
                 let data;
-                switch(config.dataSourceType) {
+                switch (config.dataSourceType) {
                     case 'flow':
                         data = node.context().flow.get(config.dataSource);
                         break;
@@ -37,7 +56,7 @@ module.exports = function(RED) {
                         data = RED.util.getMessageProperty(msg, config.dataSource);
                 }
 
-                // 2. Ambil field dari msg langsung, fallback ke config
+                // Ambil field lain
                 const root = msg.root || config.root;
                 const org = msg.org || config.org;
                 const siteType = msg.siteType || config.siteType;
@@ -47,47 +66,30 @@ module.exports = function(RED) {
                 const deviceGroup = msg.deviceGroup || config.deviceGroup;
                 const deviceName = msg.deviceName || config.deviceName;
                 const parameterName = msg.parameterName || config.parameterName;
-                const siteId = msg.siteId || config.siteId;
-                const deviceId = msg.deviceId || config.deviceId;
                 const description = msg.description || config.description;
                 const ttl = parseInt(msg.ttl) || parseInt(config.ttl) || 0;
                 const statusThrottleInterval = parseInt(msg.statusThrottleInterval) || defaultThrottleInterval;
 
-                // 3. Bangun UNS path
-                const parts = [
-                    root,
-                    org,
-                    siteType,
-                    siteName
-                ];
-
-                if (subsiteType && subsiteName) {
-                    parts.push(subsiteType, subsiteName);
-                }
-                if (deviceGroup) {
-                    parts.push(deviceGroup);
-                }
-                if (deviceName) {
-                    parts.push(deviceName);
-                }
+                // Build UNS
+                const parts = [root, org, siteType, siteName];
+                if (subsiteType && subsiteName) parts.push(subsiteType, subsiteName);
+                if (deviceGroup) parts.push(deviceGroup);
+                if (deviceName) parts.push(deviceName);
                 parts.push(parameterName);
-
                 const uns = parts.join('/');
                 msg.topic = uns;
 
                 const status = msg.status || 'up';
-
-                // 4. Susun payload
                 const ts = Date.now();
                 const store = {
                     metadata: {
                         root,
                         org,
                         siteType,
-                        siteId,
+                        siteId: msg.siteId || config.siteId,
                         subsiteType,
                         deviceGroup,
-                        deviceId,
+                        deviceId: msg.deviceId || config.deviceId,
                         parameterName,
                         description,
                         last_update: ts,
@@ -97,18 +99,40 @@ module.exports = function(RED) {
                     value: data
                 };
                 msg.payload = store;
+                msg.metadata = store;
+                msg.value = data;
 
-                // 5. Simpan ke Redis
+                // Simpan ke Redis key biasa
                 if (ttl > 0) {
                     await client.set(uns, JSON.stringify(store), 'EX', ttl);
                 } else {
                     await client.set(uns, JSON.stringify(store));
                 }
 
-                msg.metadata = store;
-                msg.value = data;
+                // --- Historian ---
+                if (config.enableHistorian) {
+                    if (!tsKey) await createTSIfNotExist(uns);
 
-                // 6. Update node.status dengan throttling
+                    // Ambil timestamp dari msg/flow/global
+                    let tsHist;
+                    if (config.historianTimestamp) {
+                        switch (config.historianTimestampType) {
+                            case 'flow':
+                                tsHist = node.context().flow.get(config.historianTimestamp);
+                                break;
+                            case 'global':
+                                tsHist = node.context().global.get(config.historianTimestamp);
+                                break;
+                            default:
+                                tsHist = RED.util.getMessageProperty(msg, config.historianTimestamp);
+                        }
+                    }
+                    if (!tsHist) tsHist = Date.now();
+
+                    await client.ts.add(tsKey, tsHist, data);
+                }
+
+                // Update node.status
                 const now = Date.now();
                 if (now - lastStatusUpdate >= statusThrottleInterval) {
                     node.status({
@@ -122,15 +146,23 @@ module.exports = function(RED) {
                 send(msg);
                 done();
             } catch (err) {
-                node.status({fill: 'red', shape: 'ring', text: `Error: ${err.message}`});
+                node.status({ fill: 'red', shape: 'ring', text: `Error: ${err.message}` });
                 lastStatusUpdate = Date.now();
                 node.error(err.message, msg);
                 done(err);
             }
         });
 
-        node.on('close', function(done) {
+        node.on('close', async function(done) {
             node.status({});
+            if (tsKey) {
+                try {
+                    await client.del(tsKey);
+                    node.warn(`TimeSeries deleted: ${tsKey}`);
+                } catch (err) {
+                    node.error(`Error deleting TS: ${err.message}`);
+                }
+            }
             if (redisCfg) {
                 redisCfg.closeClient();
             }
