@@ -5,8 +5,8 @@
     </div>
 
     <div class="form-row">
-        <label for="node-input-redisConfig"><i class="fa fa-database"></i> Redis Config</label>
-        <input id="node-input-redisConfig" placeholder="Select Redis Config">
+        <label for="node-input-redisConfig">Redis Config</label>
+        <input type="text" id="node-input-redisConfig">
     </div>
 
     <hr>
@@ -97,7 +97,7 @@
         color: '#3FADB5',
         defaults: {
             name: { value: "" },
-            redisConfig: { type: "uns-redis-config", required: true },
+            redisConfig: { value:"", type: "uns-redis-config", required: true },
             dataSourceType: { value: "msg" },
             dataSource: { value: "payload" },
             root: { value: "uns.v1" },
