@@ -1,9 +1,10 @@
 module.exports = function(RED) {
+    const RedisTimeseries = require('./redis/redis-timeseries');
+
     function UNS_SpawnNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
 
-        // Ambil Redis client dari config-node
         const redisCfg = RED.nodes.getNode(config.redisConfig);
         if (!redisCfg) {
             node.error("Missing Redis config");
@@ -11,135 +12,95 @@ module.exports = function(RED) {
             return;
         }
         const client = redisCfg.getClient();
+        const tsHelper = new RedisTimeseries(client, node);
 
-        // Tangani event Redis
-        client.on('ready', () => node.status({ fill: 'green', shape: 'dot', text: 'Redis connected' }));
-        client.on('error', err => node.status({ fill: 'red', shape: 'ring', text: `Redis error: ${err.message}` }));
-        client.on('reconnecting', ms => node.status({ fill: 'yellow', shape: 'ring', text: `Reconnecting (${ms}ms)` }));
-        client.on('close', () => node.status({}));
-
+        let tsKey = null;
         const defaultThrottleInterval = parseInt(config.statusThrottleInterval) || 1000;
         let lastStatusUpdate = 0;
 
-        // Track TS key buat delete nanti
-        let tsKey = null;
-
-        async function createTSIfNotExist(uns) {
+        // --- Setup TS saat startup / restart ---
+        async function setupTSOnStartup(uns) {
             tsKey = `hist:${uns}`;
-            try {
-                await client.ts.create(tsKey, {
-                    RETENTION: parseInt(config.historianRetention) || 86400000,
-                    LABELS: { type: 'historian', uns }
-                });
-                node.warn(`TimeSeries created: ${tsKey}`);
-            } catch (err) {
-                if (err.message.includes('TSDB: key already exists')) {
-                    node.warn(`TimeSeries already exists: ${tsKey}`);
-                } else {
-                    node.error(`TS create error: ${err.message}`);
+
+            if (config.enableHistorian) {
+                const existsAfter = await tsHelper.existsTS(tsKey);
+                if (!existsAfter) {
+                    await tsHelper.createTSIfNotExist(tsKey, parseInt(config.historianRetention) || 86400000);
+                }
+
+                 if (config.alwaysClearHistorian) {
+                    const exists = await tsHelper.existsTS(tsKey);
+                    if (exists) {
+                        await tsHelper.deleteTS(tsKey);
+                    }
                 }
             }
+
+
         }
 
-        node.on('input', async function(msg, send, done) {
+        client.on('ready', async () => {
+            node.status({ fill: 'green', shape: 'dot', text: 'Redis connected' });
+
+            // Build UNS awal dari config
+            const parts = [config.root, config.org, config.siteType, config.siteName];
+            if (config.subsiteType && config.subsiteName) parts.push(config.subsiteType, config.subsiteName);
+            if (config.deviceGroup) parts.push(config.deviceGroup);
+            if (config.deviceName) parts.push(config.deviceName);
+            parts.push(config.parameterName);
+            const uns = parts.join('/');
+
+            await setupTSOnStartup(uns);
+        });
+
+        // --- Input message handler ---
+        node.on('input', async (msg, send, done) => {
             try {
-                // Ambil data dari msg/flow/global
+                // Ambil data
                 let data;
                 switch (config.dataSourceType) {
-                    case 'flow':
-                        data = node.context().flow.get(config.dataSource);
-                        break;
-                    case 'global':
-                        data = node.context().global.get(config.dataSource);
-                        break;
-                    default:
-                        data = RED.util.getMessageProperty(msg, config.dataSource);
+                    case 'flow': data = node.context().flow.get(config.dataSource); break;
+                    case 'global': data = node.context().global.get(config.dataSource); break;
+                    default: data = RED.util.getMessageProperty(msg, config.dataSource);
                 }
 
-                // Ambil field lain
-                const root = msg.root || config.root;
-                const org = msg.org || config.org;
-                const siteType = msg.siteType || config.siteType;
-                const siteName = msg.siteName || config.siteName;
-                const subsiteType = msg.subsiteType || config.subsiteType;
-                const subsiteName = msg.subsiteName || config.subsiteName;
-                const deviceGroup = msg.deviceGroup || config.deviceGroup;
-                const deviceName = msg.deviceName || config.deviceName;
-                const parameterName = msg.parameterName || config.parameterName;
-                const description = msg.description || config.description;
-                const ttl = parseInt(msg.ttl) || parseInt(config.ttl) || 0;
-                const statusThrottleInterval = parseInt(msg.statusThrottleInterval) || defaultThrottleInterval;
-
-                // Build UNS
-                const parts = [root, org, siteType, siteName];
-                if (subsiteType && subsiteName) parts.push(subsiteType, subsiteName);
-                if (deviceGroup) parts.push(deviceGroup);
-                if (deviceName) parts.push(deviceName);
-                parts.push(parameterName);
+                // Build UNS dinamis per msg
+                const parts = [msg.root || config.root, msg.org || config.org, msg.siteType || config.siteType, msg.siteName || config.siteName];
+                if (msg.subsiteType && msg.subsiteName) parts.push(msg.subsiteType, msg.subsiteName);
+                if (msg.deviceGroup) parts.push(msg.deviceGroup);
+                if (msg.deviceName) parts.push(msg.deviceName);
+                parts.push(msg.parameterName || config.parameterName);
                 const uns = parts.join('/');
                 msg.topic = uns;
 
-                const status = msg.status || 'up';
-                const ts = Date.now();
                 const store = {
-                    metadata: {
-                        root,
-                        org,
-                        siteType,
-                        siteId: msg.siteId || config.siteId,
-                        subsiteType,
-                        deviceGroup,
-                        deviceId: msg.deviceId || config.deviceId,
-                        parameterName,
-                        description,
-                        last_update: ts,
-                        uns,
-                        status
-                    },
+                    metadata: { ...msg, uns, last_update: Date.now(), status: msg.status || 'up' },
                     value: data
                 };
                 msg.payload = store;
                 msg.metadata = store;
                 msg.value = data;
 
-                // Simpan ke Redis key biasa
-                if (ttl > 0) {
-                    await client.set(uns, JSON.stringify(store), 'EX', ttl);
-                } else {
-                    await client.set(uns, JSON.stringify(store));
+                const ttl = parseInt(msg.ttl) || parseInt(config.ttl) || 0;
+                if (ttl > 0) await client.set(uns, JSON.stringify(store), 'EX', ttl);
+                else await client.set(uns, JSON.stringify(store));
+
+                // --- Historian ADD DATA ---
+                let timestampSource;
+                switch (config.historianTimestampType) {
+                    case 'flow': timestampSource = node.context().flow.get(config.historianTimestamp); break;
+                    case 'global': timestampSource = node.context().global.get(config.historianTimestamp); break;
+                    default: timestampSource = RED.util.getMessageProperty(msg, config.historianTimestamp);
                 }
 
-                // --- Historian ---
-                if (config.enableHistorian) {
-                    if (!tsKey) await createTSIfNotExist(uns);
-
-                    // Ambil timestamp dari msg/flow/global
-                    let tsHist;
-                    if (config.historianTimestamp) {
-                        switch (config.historianTimestampType) {
-                            case 'flow':
-                                tsHist = node.context().flow.get(config.historianTimestamp);
-                                break;
-                            case 'global':
-                                tsHist = node.context().global.get(config.historianTimestamp);
-                                break;
-                            default:
-                                tsHist = RED.util.getMessageProperty(msg, config.historianTimestamp);
-                        }
-                    }
-                    if (!tsHist) tsHist = Date.now();
-
-                    await client.ts.add(tsKey, tsHist, data);
+                if (config.enableHistorian && tsKey) {
+                    const tsHist = timestampSource || Date.now();
+                    await tsHelper.addData(tsKey, tsHist, data);
                 }
 
-                // Update node.status
                 const now = Date.now();
-                if (now - lastStatusUpdate >= statusThrottleInterval) {
-                    node.status({
-                        fill: 'green',
-                        shape: 'dot',
-                        text: `value: ${data} | uns: ${uns}`
-                    });
+                if (now - lastStatusUpdate >= defaultThrottleInterval) {
+                    node.status({ fill: 'green', shape: 'dot', text: `value: ${data} | uns: ${uns}` });
                     lastStatusUpdate = now;
                 }
 
@@ -147,26 +108,24 @@ module.exports = function(RED) {
                 done();
             } catch (err) {
                 node.status({ fill: 'red', shape: 'ring', text: `Error: ${err.message}` });
-                lastStatusUpdate = Date.now();
                 node.error(err.message, msg);
                 done(err);
             }
         });
 
-        node.on('close', async function(done) {
-            node.status({});
-            if (tsKey) {
-                try {
-                    await client.del(tsKey);
-                    node.warn(`TimeSeries deleted: ${tsKey}`);
-                } catch (err) {
-                    node.error(`Error deleting TS: ${err.message}`);
+        node.on('close', async (removed, done) => {
+            try {
+                if (removed && tsKey) { 
+                    // Node dihapus permanen → delete TS
+                    await tsHelper.deleteTS(tsKey);
                 }
+            } catch (err) {
+                node.error(`Error on close: ${err.message}`);
+            } finally {
+                if (redisCfg) redisCfg.closeClient();
+                node.status({});
+                done();
             }
-            if (redisCfg) {
-                redisCfg.closeClient();
-            }
-            done();
         });
     }
 

@@ -81,6 +81,10 @@
         <input type="checkbox" id="node-input-enableHistorian">
     </div>
     <div class="form-row">
+        <label for="node-input-alwaysClearHistorian"><i class="fa fa-line-chart"></i> Always Clear Historian Every Restart</label>
+        <input type="checkbox" id="node-input-alwaysClearHistorian">
+    </div>
+    <div class="form-row">
         <label for="node-input-historianTimestamp"><i class="fa fa-clock-o"></i> Historian Timestamp Source</label>
         <input type="text" id="node-input-historianTimestamp" value="timestamp">
         <input type="hidden" id="node-input-historianTimestampType">
@@ -115,6 +119,7 @@
             ttl: { value: "" },
             statusThrottleInterval: { value: "1000" },
             enableHistorian: { value: false },
+            alwaysClearHistorian: { value: false },
             historianTimestampType: { value: "msg" },
             historianTimestamp: { value: "ts" },
             historianRetention: { value: 86400000 }

@@ -12,6 +12,10 @@
     "nodes": {
       "UNS-RedisConfig": "uns-redis-config.js",
       "UNS-Spawn": "uns-spawn.js",
+      "Redis-Hash": "uns-redis-hash.js",
+      "Redis-JSON": "uns-redis-json.js",
+
+      
       "UNS-List": "uns-list.js",
       "UNS-Get": "uns-get.js",
       "UNS-Delete": "uns-delete.js",
