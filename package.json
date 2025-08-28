@@ -15,8 +15,6 @@
       "Redis-Hash": "uns-redis-hash.js",
       "Redis-JSON": "uns-redis-json.js",
       "Redis-CLI": "uns-redis-cli.js",
-
-      
       "UNS-List": "uns-list.js",
       "UNS-Get": "uns-get.js",
       "UNS-Delete": "uns-delete.js",
@@ -24,6 +22,7 @@
     }
   },
   "dependencies": {
-    "ioredis": "^5.6.1"
+    "ioredis": "^5.6.1",
+    "jsonpath": "^1.1.1"
   }
 }

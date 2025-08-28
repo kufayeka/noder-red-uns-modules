@@ -3,33 +3,108 @@
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
+
     <div class="form-row">
         <label for="node-input-redisConfig"><i class="fa fa-server"></i> Redis Config</label>
         <input type="text" id="node-input-redisConfig">
     </div>
+
+    <hr>
+
+    <div class="form-row">
+        <label style="width:100%; margin-bottom:8px;">Pointer Rules Configuration:</label>
+        <div id="pointer-rules-container" style="border:1px solid #ccc; padding:10px; min-height:80px;">
+            <!-- Dynamic rules inserted here -->
+        </div>
+        <button type="button" id="btn-add-rule" style="margin-top:8px;">+ Add Rule</button>
+    </div>
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('uns-redis-json', {
-        category: 'database',
-        color: '#3FADB5',
+    RED.nodes.registerType("uns-redis-json", {
+        category: "database",
+        color: "#3FADB5",
         defaults: {
             name: { value: "" },
-            redisConfig: { value:"", type: "uns-redis-config", required: true },
+            redisConfig: { value: "", type: "uns-redis-config", required: true },
+            pointerRules: { value: [] }
         },
         inputs: 1,
         outputs: 1,
         icon: "font-awesome/fa-database",
-        label: function() {
+        label: function () {
             return this.name || "Redis JSON";
         },
 
-        oneditprepare: function() {
-            $("#node-input-redisConfig").typedInput({
-                typeField: '#node-input-redisConfig-type',
-                types: ['uns-redis-config'],
-                default: 'uns-redis-config'
+        oneditprepare: function () {
+            const node = this;
+
+            function addRuleRow(type, pattern, path) {
+                const rowId = "rule-" + Date.now() + "-" + Math.random().toString(36).substr(2, 5);
+                const rowHtml = `
+                    <div class="pointer-rule-row" data-row-id="${rowId}" style="display:flex; gap:8px; margin-bottom:6px; align-items:center;">
+                        <select class="rule-type" style="width:80px;">
+                            <option value="hash">Hash</option>
+                            <option value="json">JSON</option>
+                        </select>
+                        <input type="text" class="rule-pattern" placeholder="Pattern (e.g. reference/work_shift/*)" style="flex:1;" value="${pattern || ''}">
+                        <input type="text" class="rule-path" placeholder="Path (e.g. $.value)" style="flex:1;" value="${path || ''}">
+                        <button type="button" class="btn-remove-rule" style="color:#c00;">🗑️</button>
+                    </div>
+                `;
+                $("#pointer-rules-container").append(rowHtml);
+
+                const $row = $(`[data-row-id="${rowId}"]`);
+                $row.find(".rule-type").val(type || "hash");
+            }
+
+            // init from saved config
+            if (node.pointerRules && node.pointerRules.length > 0) {
+                node.pointerRules.forEach(r => {
+                    addRuleRow(r.type, r.pattern, r.path);
+                });
+            } else {
+                addRuleRow("hash", "", "");
+            }
+
+            // add rule button
+            $("#btn-add-rule").on("click", function () {
+                addRuleRow("hash", "", "");
             });
+
+            // remove rule
+            $(document).on("click", ".btn-remove-rule", function () {
+                $(this).closest(".pointer-rule-row").remove();
+            });
+        },
+
+        oneditsave: function () {
+            const rules = [];
+            $(".pointer-rule-row").each(function () {
+                const type = $(this).find(".rule-type").val();
+                const pattern = $(this).find(".rule-pattern").val();
+                const path = $(this).find(".rule-path").val();
+                if (pattern) {
+                    rules.push({ type, pattern, path });
+                }
+            });
+            this.pointerRules = rules;
         }
     });
 </script>
+
+<style>
+    .pointer-rule-row {
+        background: #f9f9f9;
+        padding: 6px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    .pointer-rule-row:hover {
+        background: #f0f0f0;
+    }
+    #pointer-rules-container {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+</style>
