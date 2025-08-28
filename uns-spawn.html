@@ -1,97 +1,54 @@
 <script type="text/html" data-template-name="uns-spawn">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="UNS Spawn">
+        <input type="text" id="node-input-name" placeholder="Name">
     </div>
 
     <div class="form-row">
-        <label for="node-input-redisConfig">Redis Config</label>
+        <label for="node-input-redisConfig"><i class="fa fa-server"></i> Redis Config</label>
         <input type="text" id="node-input-redisConfig">
     </div>
 
-    <hr>
-
-    <!-- Data source -->
     <div class="form-row">
-        <label for="node-input-dataSource"><i class="fa fa-sign-in"></i> Data Source</label>
-        <input type="text" id="node-input-dataSource" value="payload">
-        <input type="hidden" id="node-input-dataSourceType">
-    </div>
-
-    <hr>
-
-    <div class="form-row">
-        <label for="node-input-root"><i class="fa fa-globe"></i> Root</label>
-        <input type="text" id="node-input-root" placeholder="e.g. uns.v1" value="uns.v1">
-    </div>
-    <div class="form-row">
-        <label for="node-input-org"><i class="fa fa-building"></i> Organization</label>
-        <input type="text" id="node-input-org" placeholder="e.g. Jasuindo">
-    </div>
-    <div class="form-row">
-        <label for="node-input-siteType"><i class="fa fa-map-marker"></i> Site Type</label>
-        <input type="text" id="node-input-siteType" placeholder="e.g. Factory">
-    </div>
-    <div class="form-row">
-        <label for="node-input-siteName"><i class="fa fa-map-marker"></i> Site Name</label>
-        <input type="text" id="node-input-siteName" placeholder="e.g. LingkarTimur">
+        <label for="node-input-uns"><i class="fa fa-link"></i> Unified Name Space</label>
+        <input type="text" id="node-input-uns" placeholder="example: sensor/temp1">
     </div>
 
     <div class="form-row">
-        <label for="node-input-subsiteType"><i class="fa fa-map-marker"></i> Subsite Type</label>
-        <input type="text" id="node-input-subsiteType" placeholder="e.g. Building (optional)">
-    </div>
-    <div class="form-row">
-        <label for="node-input-subsiteName"><i class="fa fa-map-marker"></i> Subsite Name</label>
-        <input type="text" id="node-input-subsiteName" placeholder="e.g. Warehouse (optional)">
+        <label for="node-input-valueSource"><i class="fa fa-code"></i> Value Source</label>
+        <input type="text" id="node-input-valueSource" style="width:70%">
+        <input type="hidden" id="node-input-valueSourceType">
     </div>
 
     <div class="form-row">
-        <label for="node-input-deviceGroup"><i class="fa fa-cogs"></i> Device Group</label>
-        <input type="text" id="node-input-deviceGroup" placeholder="e.g. OffsetPrinter (optional)">
-    </div>
-    <div class="form-row">
-        <label for="node-input-deviceName"><i class="fa fa-cog"></i> Device Name</label>
-        <input type="text" id="node-input-deviceName" placeholder="e.g. Taiyo4 (optional)">
+        <label for="node-input-description"><i class="fa fa-info-circle"></i> Description</label>
+        <input type="text" id="node-input-description">
     </div>
 
     <div class="form-row">
-        <label for="node-input-parameterName"><i class="fa fa-info-circle"></i> Parameter Name</label>
-        <input type="text" id="node-input-parameterName" placeholder="e.g. Length">
-    </div>
-    <div class="form-row">
-        <label for="node-input-description"><i class="fa fa-file-text-o"></i> Description</label>
-        <input type="text" id="node-input-description" placeholder="e.g. Paper roll encoder length">
+        <label for="node-input-unit"><i class="fa fa-balance-scale"></i> Unit</label>
+        <input type="text" id="node-input-unit">
     </div>
 
     <div class="form-row">
-        <label for="node-input-ttl"><i class="fa fa-clock-o"></i> TTL (seconds)</label>
-        <input type="number" id="node-input-ttl" placeholder="e.g. 3600 (optional)">
-    </div>
-    <div class="form-row">
-        <label for="node-input-statusThrottleInterval"><i class="fa fa-tachometer"></i> Status Update Interval (ms)</label>
-        <input type="number" id="node-input-statusThrottleInterval" placeholder="e.g. 1000" value="1000">
-    </div>
-
-    <hr>
-
-    <!-- Historian options -->
-    <div class="form-row">
-        <label for="node-input-enableHistorian"><i class="fa fa-line-chart"></i> Enable Historian</label>
+        <label for="node-input-enableHistorian"><i class="fa fa-history"></i> Enable Historian</label>
         <input type="checkbox" id="node-input-enableHistorian">
     </div>
+
     <div class="form-row">
-        <label for="node-input-alwaysClearHistorian"><i class="fa fa-line-chart"></i> Always Clear Historian Every Restart</label>
-        <input type="checkbox" id="node-input-alwaysClearHistorian">
+        <label for="node-input-timestampSource"><i class="fa fa-clock-o"></i> Timestamp Source</label>
+        <input type="text" id="node-input-timestampSource" style="width:70%">
+        <input type="hidden" id="node-input-timestampSourceType">
     </div>
+
     <div class="form-row">
-        <label for="node-input-historianTimestamp"><i class="fa fa-clock-o"></i> Historian Timestamp Source</label>
-        <input type="text" id="node-input-historianTimestamp" value="timestamp">
-        <input type="hidden" id="node-input-historianTimestampType">
+        <label for="node-input-ttl"><i class="fa fa-hourglass"></i> Time to Live (sec)</label>
+        <input type="number" id="node-input-ttl" min="0" value="0">
     </div>
+
     <div class="form-row">
-        <label for="node-input-historianRetention"><i class="fa fa-hourglass-half"></i> Historian Retention (ms)</label>
-        <input type="number" id="node-input-historianRetention" placeholder="e.g. 86400000" value="86400000">
+        <label for="node-input-enableStatus"><i class="fa fa-toggle-on"></i> Enable Status</label>
+        <input type="checkbox" id="node-input-enableStatus" checked>
     </div>
 </script>
 
@@ -102,61 +59,34 @@
         defaults: {
             name: { value: "" },
             redisConfig: { value:"", type: "uns-redis-config", required: true },
-            dataSourceType: { value: "msg" },
-            dataSource: { value: "payload" },
-            root: { value: "uns.v1" },
-            org: { value: "" },
-            siteType: { value: "" },
-            siteName: { value: "" },
-            siteId: { value: "" },
-            subsiteType: { value: "" },
-            subsiteName: { value: "" },
-            deviceGroup: { value: "" },
-            deviceName: { value: "" },
-            deviceId: { value: "" },
-            parameterName: { value: "" },
-            description: { value: "" },
-            ttl: { value: "" },
-            statusThrottleInterval: { value: "1000" },
-            enableHistorian: { value: false },
-            alwaysClearHistorian: { value: false },
-            historianTimestampType: { value: "msg" },
-            historianTimestamp: { value: "ts" },
-            historianRetention: { value: 86400000 }
+            uns: { value:"", required: true },
+            valueSource: { value:"payload" },
+            valueSourceType: { value:"msg" },
+            description: { value:"" },
+            unit: { value:"" },
+            enableHistorian: { value:false },
+            timestampSource: { value:"" },
+            timestampSourceType: { value:"msg" },
+            ttl: { value:0 },
+            enableStatus: { value:true }
         },
         inputs: 1,
         outputs: 1,
         icon: "font-awesome/fa-database",
         label: function() {
-            return this.name || "UNS Spawn";
+            return this.name || ("uns-spawn: " + this.uns);
         },
-
         oneditprepare: function() {
-            $("#node-input-redisConfig").typedInput({
-                typeField: '#node-input-redisConfig-type',
-                types: ['uns-redis-config'],
-                default: 'uns-redis-config'
+            $("#node-input-valueSource").typedInput({
+                typeField: "#node-input-valueSourceType",
+                types: ["msg","flow","global"],
+                default: "msg"
             });
-
-            // typedInput buat dataSourceType (msg/flow/global)
-            $('#node-input-dataSource').typedInput({
-                default: 'msg',
-                typeField: $('#node-input-dataSourceType'),
-                types: ['msg','flow','global']
-            });
-
-            // timestamp field juga bisa pakai typedInput
-            $('#node-input-historianTimestamp').typedInput({
-                default: 'msg',
-                typeField: $('#node-input-historianTimestampType'),
-                types: ['msg','flow','global']
+            $("#node-input-timestampSource").typedInput({
+                typeField: "#node-input-timestampSourceType",
+                types: ["msg","flow","global"],
+                default: "msg"
             });
         }
     });
 </script>
-
-<style>
-    .form-row {
-        margin-bottom: 10px;
-    }
-</style>

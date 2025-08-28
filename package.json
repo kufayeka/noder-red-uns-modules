@@ -14,6 +14,7 @@
       "UNS-Spawn": "uns-spawn.js",
       "Redis-Hash": "uns-redis-hash.js",
       "Redis-JSON": "uns-redis-json.js",
+      "Redis-CLI": "uns-redis-cli.js",
 
       
       "UNS-List": "uns-list.js",

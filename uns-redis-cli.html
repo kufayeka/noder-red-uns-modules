@@ -1,0 +1,41 @@
+<script type="text/html" data-template-name="redis-cli">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Redis CLI">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-redisConfig">Redis Config</label>
+        <input type="text" id="node-input-redisConfig">
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('redis-cli', {
+        category: 'database',
+        color: '#D9534F',
+        defaults: {
+            name: { value: "" },
+            redisConfig: { value:"", type: "uns-redis-config", required: true }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-terminal",
+        label: function() {
+            return this.name || "Redis CLI";
+        },
+        oneditprepare: function() {
+            $("#node-input-redisConfig").typedInput({
+                typeField: '#node-input-redisConfig-type',
+                types: ['uns-redis-config'],
+                default: 'uns-redis-config'
+            });
+        }
+    });
+</script>
+
+<style>
+    .form-row {
+        margin-bottom: 10px;
+    }
+</style>
